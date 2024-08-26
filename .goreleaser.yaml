@@ -1,0 +1,79 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+#  功能解释：
+#  该代码是一个 `.goreleaser.yml` 文件，用于配置 Go 项目使用 goreleaser 工具进行自动化构建、测试和发布。goreleaser 是一个用于 Go 项目的自动化发布工具，它可以生成各种格式的二进制文件，如 tar.gz 和 zip，并更新版本号。
+#
+#  具体步骤：
+#1. `version: 2` - 指定配置文件的版本为 2。
+#  2. `before:` - 在构建之前运行的钩子。
+#  - `hooks:` - 定义在构建前执行的命令。
+#  - `- go mod tidy` - 清理 Go 模块依赖。
+#  - `- go generate ./...` - 运行生成命令。
+#  3. `builds:` - 定义构建配置。
+#  - `- env:` - 设置构建环境变量。
+#  - `- CGO_ENABLED=0` - 禁用 CGO，以便生成纯 Go 二进制文件。
+#  - `goos:` - 指定支持的操作系统。
+#  - `- linux` - 支持 Linux。
+#  - `- windows` - 支持 Windows。
+#  - `- darwin` - 支持 macOS。
+#  4. `archives:` - 定义生成的归档文件。
+#  - `- format: tar.gz` - 设置归档格式为 tar.gz。
+#- `name_template:` - 定义归档文件名的模板。
+#  - `{{ .ProjectName }}_` - 项目名称。
+#  - `{{- title .Os }}_` - 操作系统的标题化版本。
+#  - `{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "386" }}i386{{- else }}{{ .Arch }}{{ end }}` - 架构版本。
+#  - `{{- if .Arm }}v{{ .Arm }}{{ end }}` - 如果是 ARM 架构，添加版本前缀。
+#- `format_overrides:` - 格式覆盖。
+#    - `- goos: windows` - 当操作系统为 Windows 时。
+#    - `- format: zip` - 使用 zip 格式。
+#  5. `changelog:` - 配置变更日志。
+#- `sort: asc` - 变更日志按升序排序。
+#- `filters:` - 过滤器配置。
+#  - `exclude:` - 排除匹配的条目。
+#  - `- "^docs:"` - 排除以 "docs:" 开头的条目。
+#  - `- "^test:"` - 排除以 "test:" 开头的条目。

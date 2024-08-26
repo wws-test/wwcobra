@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,19 +20,22 @@ import (
 )
 
 // configCmd represents the config command
+// fileName:config.go
+
+// configCmd 是一个用于管理配置的子命令，可以与其他子命令 'add', 'update', 'view', 和 'delete' 结合使用。
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "The 'config' subcommand is for use in management of configuration.",
-	Long: `The 'config' subcommand is for use in management of configuration. It can be used, in combination with the
-other subcommands 'add', 'update', 'view', and 'delete', . For example:
+	Short: "配置-config子命令用于配置管理.",
+	Long: `“'config子命令用于配置管理。它可以与其他子命令add'、'update'、'view和'delete'结合使用。例如：
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Cobra是一个用于Go的CLI库，赋予应用程序力量。
+这个应用程序是一个用于快速生成所需文件的工具
+以快速创建一个Cobra应用程序。”`,
 }
 
 func init() {
 	rootCmd.AddCommand(configCmd)
+	// 为 configCmd 添加持久标志，用于添加到配置的键值对的键和值。
 	configCmd.PersistentFlags().StringP("key", "k", "", "The key for the key value set to add to the configuration.")
 	configCmd.PersistentFlags().StringP("value", "v", "", "The value for the key value set to add to the configuration.")
 }

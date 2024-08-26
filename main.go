@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ package main
 
 import "github.com/Adron/cobra-cli-samples/cmd"
 
+// main函数是Go程序的入口函数
 func main() {
-  cmd.Execute()
+	cmd.Execute() // 调用cmd包中的Execute函数
 }
