@@ -51,5 +51,7 @@ func printLast100Lines(filePath string) {
 }
 
 func init() {
+	// 启用前缀匹配
+	cobra.EnablePrefixMatching = true
 	rootCmd.AddCommand(taillogCmd)
 }

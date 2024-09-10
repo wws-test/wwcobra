@@ -19,5 +19,6 @@ import "github.com/Adron/cobra-cli-samples/cmd"
 
 // main函数是Go程序的入口函数
 func main() {
+
 	cmd.Execute() // 调用cmd包中的Execute函数
 }

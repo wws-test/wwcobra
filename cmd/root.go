@@ -35,6 +35,7 @@ examples and usage of using your application. For example:`,
 
 // Execute函数用于执行rootCmd命令，如果执行出错则打印错误信息并退出程序
 func Execute() {
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -1,46 +1,38 @@
 # cobra-cli-samples
 
-This is a CLI App example using the [Cobra](https://github.com/spf13/cobra) and [Viper](https://github.com/spf13/viper) libraries for Go. This application provides commands (per Cobra) to read, write, update, and delete configuration records from a configuration file using Viper.
-
+这个是一个使用Go语言编写的CLI应用程序示例，它使用了Cobra和Viper库。该应用程序提供了一系列命令（通过Cobra实现），用于使用Viper从配置文件中读取、写入、更新和删除配置记录。
 ## Using the example CLI App.
 
-`<cli> config -h` provides the following documentation for using this CLI App.
+`<cli> config -h` 提供了以下文档，用于使用这个CLI应用程序
 
 ```
-Available Commands:
-  add         The 'add' subcommand will add a passed in key value pair to the application configuration file.
-  delete      The 'delete' subcommand removes a key value pair from the configuration file. 
-  update      The 'update' subcommand will update a passed in key value pair for an existing set of data to the application configuration file.
-  view        The 'view' subcommand will provide a list of keys and a map of the values.
-
-Flags:
-  -h, --help           help for config
-  -k, --key string     The key for the key value set to add to the configuration.
-  -v, --value string   The value for the key value set to add to the configuration.
+可用命令： add 'add' 子命令将传递的键值对添加到应用程序配置文件中。
+ delete 'delete' 子命令从配置文件中移除键值对。 
+ update 'update' 子命令将传递的键值对更新到现有的数据集中到应用程序配置文件。
+  view 'view' 子命令将提供键的列表和值的映射。
+  
+标志： -h, --help config的帮助信息 
+-k, --key string 要添加到配置中的键值对的键。 
+-v, --value string 要添加到配置中的键值对的值。
 ```
 
-> Currently I got this to work but it isn't in the best shape. Check out the code [here](https://github.com/Adron/cobra-cli-samples/blob/master/cmd/delete.go).
-
-## Get Involved, Add Samples, Make Requests
-
-If you'd like to get involved and add samples or make request for additional samples please file an issue [here](https://github.com/Adron/cobra-cli-samples/issues/new?assignees=&labels=&template=feature_request.md&title=)!
-
-If you've found any bugs or issues with the code please file a bug report [here](https://github.com/Adron/cobra-cli-samples/issues/new?assignees=&labels=&template=bug_report.md&title=)!
 
 ### Examples, The CRUD!
 
-`./cli config add -k "blog" -v "https://compositecode.blog/"` example writes a record to the configuration file with a key of "blog" and a value of "https://compositecode.blog/".
-
-`./cli config view` displays the contents of the configuration file and CLI specific environment variables. These are the configuration files located in the `.cobrae-cli-samples.yml` and environment variables prefaced with `COBRACLISAMPLES`. The list of keys is displaced first and then the keys and values are displayed below that.
-
-`./cli config update -k "blog" -v "not found"` will update the blog entry in the configuration to read `not found` for the value.
-
-`./cli config delete ...` will delete the key and value from the configuration file.
+./cli config add -k "blog" -v "https://compositecode.blog/" 示例将一条记录写入配置文件，键为 "blog"，值为 "https://compositecode.blog/"。
+./cli config view 显示配置文件的内容和CLI特定的环境变量。这些配置文件位于 .cobrae-cli-samples.yml 中，环境变量以 COBRACLISAMPLES 开头。首先显示键的列表，然后在其下方显示键和值。
+./cli config update -k "blog" -v "not found" 将更新配置中的博客条目，将其值更改为 "not found"。
+./cli config delete ... 将从配置文件中删除键和值。
 
 ## Building the Project
+go test
+go build -o cli_demo
 
-Following a fairly standard clone, one can build this project with a single step using the `./build.sh` file. If you'd like to contribute the same for Windows, feel free I'd be happy to pull that PR in. Once the project is built use the CLI as defined above.
 
-## Installing the CLI App
+## 加入全局变量 所有用户生效
 
-This application can be installed as a CLI app by referencing it's location in your bash (powershell? etc) startup script.
+sudo sh -c 'echo "export PATH=\$PATH:/opt/cli_demo*" >> /etc/profile && echo "alias wws=\"/opt/cli_demo*\"" >> /etc/profile'
+
+source /etc/profile
+
+
