@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package group
 
 import (
 	"fmt"
+	"github.com/Adron/cobra-cli-samples/cmd"
 
 	"github.com/Adron/cobra-cli-samples/configMgmt"
 	"github.com/spf13/cobra"
@@ -43,5 +44,5 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	configCmd.AddCommand(deleteCmd)
+	cmd.ConfigCmd.AddCommand(deleteCmd)
 }

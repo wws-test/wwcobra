@@ -22,8 +22,8 @@ import (
 // configCmd represents the config command
 // fileName:config.go
 
-// configCmd 是一个用于管理配置的子命令，可以与其他子命令 'add', 'update', 'view', 和 'delete' 结合使用。
-var configCmd = &cobra.Command{
+// ConfigCmd 是一个用于管理配置的子命令，可以与其他子命令 'add', 'update', 'view', 和 'delete' 结合使用。
+var ConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "配置-config子命令用于配置管理.",
 	Long: `“'config子命令用于配置管理。它可以与其他子命令add'、'update'、'view和'delete'结合使用。例如：
@@ -34,8 +34,8 @@ Cobra是一个用于Go的CLI库，赋予应用程序力量。
 }
 
 func init() {
-	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(ConfigCmd)
 	// 为 configCmd 添加持久标志，用于添加到配置的键值对的键和值。
-	configCmd.PersistentFlags().StringP("key", "k", "", "The key for the key value set to add to the configuration.")
-	configCmd.PersistentFlags().StringP("value", "v", "", "The value for the key value set to add to the configuration.")
+	ConfigCmd.PersistentFlags().StringP("key", "k", "", "The key for the key value set to add to the configuration.")
+	ConfigCmd.PersistentFlags().StringP("value", "v", "", "The value for the key value set to add to the configuration.")
 }

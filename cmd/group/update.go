@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
+package group
 
 import (
+	"github.com/Adron/cobra-cli-samples/cmd"
+
 	"github.com/Adron/cobra-cli-samples/configMgmt"
 	"github.com/spf13/cobra"
 )
@@ -39,5 +41,5 @@ not exist then the passed in values are added to the application configuration f
 }
 
 func init() {
-	configCmd.AddCommand(updateCmd) // 将updateCmd子命令添加到configCmd命令中
+	cmd.ConfigCmd.AddCommand(updateCmd) // 将updateCmd子命令添加到configCmd命令中
 }
