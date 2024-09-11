@@ -78,39 +78,6 @@ var taillogCmd = &cobra.Command{
 	},
 }
 
-//var taillogCmd = &cobra.Command{
-//	Use:   "taillog",
-//	Short: "Print the last 100 lines of a specified log file",
-//	Long: `The 'taillog' subcommand will print the last 100 lines of the specified log file. For example:
-//
-//'<cmd> taillog /opt/metersphere/logs/api-test/ms-jmeter-run.log'`,
-//	Run: func(cmd *cobra.Command, args []string) {
-//		if len(args) < 1 {
-//			prompt := promptui.Prompt{
-//				Label: "Please provide the path of the log file",
-//			}
-//
-//			result, err := prompt.Run()
-//			if err != nil {
-//				fmt.Printf("Prompt failed %v\n", err)
-//				return
-//			}
-//
-//			filePath := result
-//			printLast100Lines(filePath)
-//		} else {
-//			filePath := args[0]
-//			printLast100Lines(filePath)
-//		}
-//	},
-//	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-//		// 这里可以根据需要返回自动补全的候选列表
-//		// 例如，返回当前目录下的所有文件和目录
-//		files, _ := filepath.Glob(toComplete + "*")
-//		return files, cobra.ShellCompDirectiveDefault
-//	},
-//}
-
 func init() {
 	// 启用前缀匹配
 	cobra.EnablePrefixMatching = true

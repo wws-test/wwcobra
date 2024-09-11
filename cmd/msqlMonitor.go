@@ -1,10 +1,11 @@
-package configMgmt
+package cmd
 
 import (
 	"bytes"
 	"database/sql"
-	"flag"
 	"fmt"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
@@ -19,15 +20,7 @@ import (
 )
 
 var (
-	flagHelp   = flag.Bool("help", false, "Shows usage options.")
-	flagHost   = flag.String("host", "localhost", "Bind mysql host.")
-	flagPort   = flag.Uint("port", 3306, "Bind mysql port.")
-	flagUser   = flag.String("u", "", "Select mysql username.")
-	flagPasswd = flag.String("p", "", "Input mysql password.")
-)
-
-var (
-	// color
+	// 颜色定义
 	Yellow     = color.Yellow.Render
 	Cyan       = color.Cyan.Render
 	LightGreen = color.Style{color.Green, color.OpBold}.Render
@@ -39,70 +32,137 @@ var (
 	cstZone = time.FixedZone("CST", 8*3600)
 )
 
-func banner() {
-	t := `
-	███╗   ███╗██╗   ██╗███████╗ ██████╗ ██╗     
-	████╗ ████║╚██╗ ██╔╝██╔════╝██╔═══██╗██║     
-	██╔████╔██║ ╚████╔╝ ███████╗██║   ██║██║     
-	██║╚██╔╝██║  ╚██╔╝  ╚════██║██║▄▄ ██║██║     
-	██║ ╚═╝ ██║   ██║   ███████║╚██████╔╝███████╗
-	╚═╝     ╚═╝   ╚═╝   ╚══════╝ ╚══▀▀═╝ ╚══════╝
-███╗   ███╗ ██████╗ ███╗   ██╗██╗████████╗ ██████╗ ██████╗ 
-████╗ ████║██╔═══██╗████╗  ██║██║╚══██╔══╝██╔═══██╗██╔══██╗
-██╔████╔██║██║   ██║██╔██╗ ██║██║   ██║   ██║   ██║██████╔╝
-██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║   ██║   ██║██╔══██╗
-██║ ╚═╝ ██║╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝██║  ██║
-╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝`
-	fmt.Println(t)
+var monitorCmd = &cobra.Command{
+	Use:   "monitor",
+	Short: "实时输出 MySQL 监控日志",
+	Long:  `'monitor' 子命令将打印指定 SQL 语句`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := initDB(); err != nil {
+			// 如果初始化过程中出现错误，记录错误日志并退出程序
+			log.Fatalf("initDB error: %s", err)
+		}
+
+		// 延迟执行函数，用于清理资源
+		defer func() {
+			// 尝试清理日志文件，如果发生错误，记录错误日志
+			if err := cleanGenerakLog(); err != nil {
+				log.Printf("cleanGenerakLog error: %s \n", err)
+			}
+			// 尝试关闭日志记录，如果发生错误，记录错误日志
+			if err := closeLogRaw(); err != nil {
+				log.Printf("closeLogRaw error: %s \n", err)
+			}
+			// 尝试关闭数据库连接，如果发生错误，记录错误日志
+			if err := db.Close(); err != nil {
+				log.Printf("close database connection error: %s \n", err)
+			}
+
+			// 打印程序退出信息
+			fmt.Println("\nBye hacker :)")
+		}()
+
+		// 输出程序启动信息
+		fmt.Println("start mysql monitor...")
+
+		// 设置MySQL日志输出
+		if err := setMySQLLogOutput(); err != nil {
+			// 如果设置过程中出现错误，记录错误日志并退出程序
+			log.Fatalf("setMySQLLogOutput error: %s", err)
+		}
+
+		// 打开日志记录的原始模式
+		if err := openLogRaw(); err != nil {
+			// 如果打开过程中出现错误，记录错误日志并退出程序
+			log.Fatalf("openLogRaw error: %s", err)
+		}
+		// Check if the log file exists
+		if _, err := os.Stat(logfile); os.IsNotExist(err) {
+			fmt.Printf("Log file does not exist: %s\n", logfile)
+			prompt := promptui.Prompt{
+				Label:   "请输入mysql日志文件的路径",
+				Default: "/opt/metersphere/data/mysql/04c6a6eceb9a.log",
+				Validate: func(input string) error {
+					if strings.TrimSpace(input) == "" {
+						return fmt.Errorf("文件路径不能为空")
+					}
+					return nil
+				},
+			}
+			result, err := prompt.Run()
+			if err != nil {
+				fmt.Printf("提示失败 %v\n", err)
+				return
+			}
+			logfile = result
+			// Optionally, you can validate the new path here
+			fmt.Printf("Using new log file path: %s\n", logfile)
+		}
+
+		// 在这里添加监控逻辑
+		watchdog()
+	},
 }
 
+func init() {
+	// 启用前缀匹配
+	cobra.EnablePrefixMatching = true
+	rootCmd.AddCommand(monitorCmd)
+}
 func main() {
-	banner()
-
+	// 在非Windows环境下，检查当前用户是否为root
 	if runtime.GOOS != "windows" && !isRoot() {
 		log.Fatalln("run as a user with root! Thx:)")
 	}
 
-	flag.Parse()
-	if *flagHelp || *flagUser == "" {
-		fmt.Println("Usage: MySQLMonitor [options]")
-		flag.PrintDefaults()
-		return
-	}
-
+	// 初始化数据库连接
 	if err := initDB(); err != nil {
+		// 如果初始化过程中出现错误，记录错误日志并退出程序
 		log.Fatalf("initDB error: %s", err)
 	}
 
+	// 延迟执行函数，用于清理资源
 	defer func() {
+		// 尝试清理日志文件，如果发生错误，记录错误日志
 		if err := cleanGenerakLog(); err != nil {
 			log.Printf("cleanGenerakLog error: %s \n", err)
 		}
+		// 尝试关闭日志记录，如果发生错误，记录错误日志
 		if err := closeLogRaw(); err != nil {
 			log.Printf("closeLogRaw error: %s \n", err)
 		}
+		// 尝试关闭数据库连接，如果发生错误，记录错误日志
 		if err := db.Close(); err != nil {
 			log.Printf("close database connection error: %s \n", err)
 		}
+
+		// 打印程序退出信息
 		fmt.Println("\nBye hacker :)")
 	}()
 
-	fmt.Println("start mysql monitor ...")
+	// 输出程序启动信息
+	fmt.Println("start mysql monitor...")
+
+	// 设置MySQL日志输出
 	if err := setMySQLLogOutput(); err != nil {
+		// 如果设置过程中出现错误，记录错误日志并退出程序
 		log.Fatalf("setMySQLLogOutput error: %s", err)
 	}
+
+	// 打开日志记录的原始模式
 	if err := openLogRaw(); err != nil {
+		// 如果打开过程中出现错误，记录错误日志并退出程序
 		log.Fatalf("openLogRaw error: %s", err)
 	}
 
+	// 启动看门狗程序，用于监控日志文件
 	watchdog()
 }
 
-// 初始化数据库连接
+// initDB 函数用于初始化数据库连接
 func initDB() error {
 	var err error
 	// 使用配置的参数连接MySQL数据库
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=True&loc=Local", *flagUser, *flagPasswd, *flagHost, *flagPort))
+	db, err = sql.Open("mysql", fmt.Sprintf("root:Password123@mysql@tcp(localhost:3306)/?charset=utf8mb4&parseTime=True&loc=Local"))
 	// 如果连接失败，返回错误
 	if err != nil {
 		return err
@@ -116,7 +176,6 @@ func initDB() error {
 	return nil
 }
 
-// fileName: msqlMonitor.go
 // catMySQLVersion 函数用于获取MySQL数据库的版本信息
 func catMySQLVersion() (string, error) {
 	var version string                         // 定义字符串变量用于存储MySQL版本信息
@@ -169,7 +228,6 @@ type mysqlVariable struct {
 	Value string `sql:"Value"`
 }
 
-// fileName: msqlMonitor.go
 // 设置MySQL日志输出配置的函数
 func setMySQLLogOutput() error {
 	// 定义一个结构体变量用于存储查询到的变量名和值
@@ -200,7 +258,6 @@ func setMySQLLogOutput() error {
 	return nil
 }
 
-// fileName: msqlMonitor.go
 // cleanGenerakLog 函数用于关闭MySQL的通用日志功能，并清空日志文件
 func cleanGenerakLog() error {
 	// 尝试执行SQL命令关闭通用日志
@@ -208,6 +265,7 @@ func cleanGenerakLog() error {
 		// 如果执行失败，返回错误
 		return err
 	}
+
 	// 如果提供了日志文件路径
 	if logfile != "" {
 		// 使用os.Truncate将日志文件大小截断为0，即清空文件内容
@@ -219,10 +277,12 @@ func cleanGenerakLog() error {
 
 func watchdog() {
 	var f *os.File
+	fmt.Println("start watchdog ...")
 
 	if logfile == "" {
 		log.Fatalln("general_log_file was empty :(")
 	}
+	fmt.Println("start watchdog ...", logfile)
 	f, err := os.Open(logfile)
 	if err != nil {
 		log.Fatalf("Open '%s' error: %s", logfile, err)
