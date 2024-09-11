@@ -11,8 +11,10 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -275,8 +277,54 @@ func cleanGenerakLog() error {
 	return nil
 }
 
+type SQLInfo struct {
+	count    int
+	lastTime time.Time
+	command  string
+	sql      string
+}
+
+var (
+	sqlMap   = make(map[string]*SQLInfo)
+	mapMutex sync.Mutex
+)
+
+func isUnimportantSQL(sql string) bool {
+	unimportantQueries := []string{"SET autocommit=0", "commit", "BEGIN", "ROLLBACK"}
+	for _, q := range unimportantQueries {
+		if strings.Contains(sql, q) {
+			return true
+		}
+	}
+	return false
+}
+func printResults() {
+	mapMutex.Lock()
+	defer mapMutex.Unlock()
+
+	var infos []*SQLInfo
+	for _, info := range sqlMap {
+		infos = append(infos, info)
+	}
+
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].count > infos[j].count
+	})
+
+	fmt.Println("\nSQL执行统计:")
+	fmt.Println("时间\t\t次数\t命令\tSQL")
+	fmt.Println("----\t\t----\t----\t---")
+	for _, info := range infos {
+		fmt.Printf("%s\t%d\t%s\t%s\n",
+			Yellow(info.lastTime.In(cstZone).Format("15:04:05")),
+			info.count,
+			Cyan(info.command),
+			LightGreen(info.sql),
+		)
+	}
+	fmt.Println() // 打印空行，增加可读性
+}
 func watchdog() {
-	var f *os.File
 	fmt.Println("start watchdog ...")
 
 	if logfile == "" {
@@ -288,6 +336,7 @@ func watchdog() {
 		log.Fatalf("Open '%s' error: %s", logfile, err)
 	}
 	defer f.Close()
+
 	// 指向文件尾部
 	_, err = f.Seek(0, 2)
 	if err != nil {
@@ -295,27 +344,52 @@ func watchdog() {
 	}
 
 	// make handle
-	//	Time	Id Command	Argument
 	handle := func(line string) {
 		if strings.Contains(line, "Execute") || strings.Contains(line, "Query") {
 			lines := strings.Split(line, "\t")
 			t, err := str2Time(lines[0], "2006-01-02T15:04:05Z")
-			if err == nil {
-				lines[0] = t.In(cstZone).Format("15:04:05")
+			if err != nil {
+				return
 			}
-			c := strings.Split(strings.TrimSpace(lines[1]), " ")[1]
-			fmt.Printf("%s -> [%s] `%s`\n", Yellow(c), Cyan(lines[0]), LightGreen(lines[2]))
+
+			command := strings.Split(strings.TrimSpace(lines[1]), " ")[1]
+			sql := strings.TrimSpace(lines[2])
+
+			// 过滤不重要的SQL语句
+			if isUnimportantSQL(sql) {
+				return
+			}
+
+			key := command + sql
+			mapMutex.Lock()
+			if info, exists := sqlMap[key]; exists {
+				info.count++
+				info.lastTime = t
+			} else {
+				sqlMap[key] = &SQLInfo{
+					count:    1,
+					lastTime: t,
+					command:  command,
+					sql:      sql,
+				}
+			}
+			mapMutex.Unlock()
 		}
 	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
-LOOP:
 
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+LOOP:
 	for {
 		select {
 		case <-quit:
 			break LOOP
+		case <-ticker.C:
+			printResults()
 		default:
 			if err := linePrinter(f, handle); err != nil {
 				log.Printf("linePrinter error: %s \n", err)
@@ -324,6 +398,9 @@ LOOP:
 			time.Sleep(time.Millisecond * 550)
 		}
 	}
+
+	// 在退出时打印最终结果
+	printResults()
 }
 
 func linePrinter(r io.Reader, call func(string)) error {
