@@ -1,44 +1,19 @@
 package configMgmt
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"testing"
 )
 
 func TestSplit(t *testing.T) {
-	url := fmt.Sprintf("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-speed-128k?access_token=%s", "24.5f49c62da0c44cf057adae93da0b43dd.2592000.1728439234.282335-115511015")
 
-	payload := []byte(`{
-		"messages": [
-			{
-				"role": "user",
-				"content": "介绍一下北京"
-			}
-		]
-	}`)
+	question := "介绍一下北京"
+	roleDesc := "你是一位知识渊博的历史学家，擅长介绍中国各个城市的文化和历史。"
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	answer, err := chatWithAI(question, roleDesc)
 	if err != nil {
-		fmt.Println("Error creating request:", err)
+		fmt.Println("Error:", err)
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error making request:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-	fmt.Println(string(body))
+	fmt.Println("Answer:", answer)
 }
