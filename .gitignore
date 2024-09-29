@@ -16,3 +16,4 @@
 
 cli
 dist/
+.aider*
